@@ -66,7 +66,6 @@ PeridigmNS::BoundaryCondition::BoundaryCondition(const string & name_,const Teuc
   nodeSetName = nodeSet;
   coord = to_index(to_spatial_coordinate(bcParams_));
   function = bcParams_.get<string>("Value");
-
   // set up RTCompiler
   rtcFunction = Teuchos::rcp<PG_RuntimeCompiler::Function>(new PG_RuntimeCompiler::Function(5, "rtcBoundaryConditionFunction"));
   rtcFunction->addVar("double", "x");
@@ -212,12 +211,11 @@ PeridigmNS::DirichletIncrementBC::DirichletIncrementBC(const string & name_,
   const double & deltaTCoeff_)
 : BoundaryCondition(name_,bcParams_,toVector_,peridigm_,isCumulative_),
   coeff(coeff_),
-  deltaTCoeff(deltaTCoeff_){
-}
+  deltaTCoeff(deltaTCoeff_){}
 
 void PeridigmNS::DirichletIncrementBC::apply(Teuchos::RCP< std::map< std::string, std::vector<int> > > nodeSets, const double & timeCurrent, const double & timePrevious){
   // for temperature bcs, the previous time should always be zero
-  const double timePrevious_ = bcType==PRESCRIBED_TEMPERATURE ? 0.0 : timePrevious;
+	const double timePrevious_ = (bcType==PRESCRIBED_TEMPERATURE || bcType==PRESCRIBED_INTERNAL_HEAT_SOURCE) ? 0.0 : timePrevious;;
 
   // get the tensor order of the bc field:
   const int fieldDimension = to_dimension_size(tensorOrder);
@@ -282,5 +280,3 @@ void PeridigmNS::DirichletIncrementBC::apply(Teuchos::RCP< std::map< std::string
     }
   }
 }
-
-

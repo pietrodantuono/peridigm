@@ -1,4 +1,4 @@
-/*! \file Peridigm_ModelEvaluator.hpp */
+/*! \file Peridigm_CriticalThermalTimeStep.hpp */
 
 //@HEADER
 // ************************************************************************
@@ -45,52 +45,16 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef PERIDIGM_MODELEVALUATOR_HPP
-#define PERIDIGM_MODELEVALUATOR_HPP
+#ifndef PERIDIGM_CRITICALTHERMALTIMESTEP_HPP
+#define PERIDIGM_CRITICALTHERMALTIMESTEP_HPP
 
-#include "Peridigm_ContactManager.hpp"
 #include "Peridigm_Block.hpp"
+#include <Epetra_Comm.h>
 
 namespace PeridigmNS {
 
-  //! Structure for passing data between Peridigm and the computational routines
-  struct Workset {
-    Workset() {}
-    double timeStep;
-    Teuchos::RCP< std::vector<PeridigmNS::Block> > blocks;
-    Teuchos::RCP< PeridigmNS::ContactManager > contactManager;
-    Teuchos::RCP<PeridigmNS::Material::JacobianType> jacobianType;
-    Teuchos::RCP< PeridigmNS::SerialMatrix > jacobian;
-  };
+double ComputeCriticalThermalTimeStep(const Epetra_Comm& comm, PeridigmNS::Block& block);
 
-  //! The main ModelEvaluator class; provides the interface between the driver code and the computational routines.
-  class ModelEvaluator {
-
-  public:
-
-    //! Constructor
-    ModelEvaluator();
-
-    //! Destructor
-	virtual ~ModelEvaluator();
-
-    //! Model evaluation that acts directly on the workset
-    void evalModel(Teuchos::RCP<Workset> workset) const;
-
-    //! Model evaluation that acts directly on the workset
-    void evalHeatFlow(Teuchos::RCP<Workset> workset) const;
-
-    //! Jacobian evaluation that acts directly on the workset
-    void evalJacobian(Teuchos::RCP<Workset> workset) const;
-
-  private:
-
-    //! Private to prohibit copying
-    ModelEvaluator(const ModelEvaluator&);
-
-    //! Private to prohibit copying
-    ModelEvaluator& operator=(const ModelEvaluator&);
-  };
 }
 
-#endif // PERIDIGM_MODELEVALUATOR_HPP
+#endif // PERIDIGM_CRITICALTHERMALTIMESTEP_HPP

@@ -55,7 +55,7 @@ PeridigmNS::ModelEvaluator::ModelEvaluator(){
 PeridigmNS::ModelEvaluator::~ModelEvaluator(){
 }
 
-void 
+void
 PeridigmNS::ModelEvaluator::evalModel(Teuchos::RCP<Workset> workset) const
 {
   const double dt = workset->timeStep;
@@ -72,7 +72,7 @@ PeridigmNS::ModelEvaluator::evalModel(Teuchos::RCP<Workset> workset) const
       const int* ownedIDs = neighborhoodData->OwnedIDs();
       const int* neighborhoodList = neighborhoodData->NeighborhoodList();
       Teuchos::RCP<PeridigmNS::DataManager> dataManager = blockIt->getDataManager();
-      damageModel->computeDamage(dt, 
+      damageModel->computeDamage(dt,
                                  numOwnedPoints,
                                  ownedIDs,
                                  neighborhoodList,
@@ -91,7 +91,7 @@ PeridigmNS::ModelEvaluator::evalModel(Teuchos::RCP<Workset> workset) const
     Teuchos::RCP<PeridigmNS::DataManager> dataManager = blockIt->getDataManager();
     Teuchos::RCP<const PeridigmNS::Material> materialModel = blockIt->getMaterialModel();
 
-    materialModel->computeForce(dt, 
+    materialModel->computeForce(dt,
                                 numOwnedPoints,
                                 ownedIDs,
                                 neighborhoodList,
@@ -103,7 +103,34 @@ PeridigmNS::ModelEvaluator::evalModel(Teuchos::RCP<Workset> workset) const
     workset->contactManager->evaluateContactForce(dt);
 }
 
-void 
+void
+PeridigmNS::ModelEvaluator::evalHeatFlow(Teuchos::RCP<Workset> workset) const
+{
+	const double dt = workset->timeStep;
+	std::vector<PeridigmNS::Block>::iterator blockIt;
+
+	// ---- Evaluate Heat Flow ----
+	for(blockIt = workset->blocks->begin() ; blockIt != workset->blocks->end() ; blockIt++){
+
+		Teuchos::RCP<PeridigmNS::NeighborhoodData> neighborhoodData = blockIt->getNeighborhoodData();
+		const int numOwnedPoints = neighborhoodData->NumOwnedPoints();
+		const int* ownedIDs = neighborhoodData->OwnedIDs();
+		const int* neighborhoodList = neighborhoodData->NeighborhoodList();
+		Teuchos::RCP<PeridigmNS::DataManager> dataManager = blockIt->getDataManager();
+		Teuchos::RCP<const PeridigmNS::Material> materialModel = blockIt->getMaterialModel();
+		Teuchos::RCP<const PeridigmNS::ThermalMaterial> matmod = Teuchos::rcp_dynamic_cast<const PeridigmNS::ThermalMaterial>(materialModel);
+
+		if (!Teuchos::is_null(matmod)){
+			matmod->computeHeatFlow(dt,
+								numOwnedPoints,
+								ownedIDs,
+								neighborhoodList,
+								*dataManager);
+		}
+	}
+}
+
+void
 PeridigmNS::ModelEvaluator::evalJacobian(Teuchos::RCP<Workset> workset) const
 {
   const double dt = workset->timeStep;
@@ -122,7 +149,7 @@ PeridigmNS::ModelEvaluator::evalJacobian(Teuchos::RCP<Workset> workset) const
     Teuchos::RCP<PeridigmNS::DataManager> dataManager = blockIt->getDataManager();
     Teuchos::RCP<const PeridigmNS::Material> materialModel = blockIt->getMaterialModel();
 
-    materialModel->computeJacobian(dt, 
+    materialModel->computeJacobian(dt,
                                    numOwnedPoints,
                                    ownedIDs,
                                    neighborhoodList,

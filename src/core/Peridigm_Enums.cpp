@@ -84,12 +84,16 @@ void create_string_maps()
   spatial_coordinate_string[NO_SUCH_SPATIAL_COORDINATE]                                   = "NO_SUCH_SPATIAL_COORDINATE";
 
   boundary_condition_string[PRESCRIBED_DISPLACEMENT]                                      = "PRESCRIBED_DISPLACEMENT";
-  boundary_condition_string[PRESCRIBED_FLUID_PRESSURE_U]                                      = "PRESCRIBED_FLUID_PRESSURE_U";
+  boundary_condition_string[PRESCRIBED_FLUID_PRESSURE_U]                                  = "PRESCRIBED_FLUID_PRESSURE_U";
   boundary_condition_string[PRESCRIBED_TEMPERATURE]                                       = "PRESCRIBED_TEMPERATURE";
   boundary_condition_string[INITIAL_TEMPERATURE]                                          = "INITIAL_TEMPERATURE";
+  boundary_condition_string[PRESCRIBED_HEAT_FLOW]                                         = "PRESCRIBED_HEAT_FLOW";
+  boundary_condition_string[INITIAL_HEAT_FLOW]                                            = "INITIAL_HEAT_FLOW";
+  boundary_condition_string[INITIAL_INTERNAL_HEAT_SOURCE]                                 = "INITIAL_INTERNAL_HEAT_SOURCE";
+  boundary_condition_string[PRESCRIBED_INTERNAL_HEAT_SOURCE]                              = "PRESCRIBED_INTERNAL_HEAT_SOURCE";
   boundary_condition_string[INITIAL_DISPLACEMENT]                                         = "INITIAL_DISPLACEMENT";
   boundary_condition_string[INITIAL_VELOCITY]                                             = "INITIAL_VELOCITY";
-  boundary_condition_string[INITIAL_FLUID_PRESSURE_U]                                       = "INITIAL_FLUID_PRESSURE_U";
+  boundary_condition_string[INITIAL_FLUID_PRESSURE_U]                                     = "INITIAL_FLUID_PRESSURE_U";
   boundary_condition_string[BODY_FORCE]                                                   = "BODY_FORCE";
   boundary_condition_string[NO_SUCH_BOUNDARY_CONDITION_TYPE]                              = "NO_SUCH_BOUNDARY_CONDITION_TYPE";
 
@@ -317,5 +321,3 @@ bool is_initial(const Boundary_Condition_Type & bc_type){
   const std::string test_str = "INITIAL";
   return bc_str.find("INITIAL")!=std::string::npos;
 }
-
-

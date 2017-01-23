@@ -111,12 +111,11 @@ void PeridigmNS::BoundaryAndInitialConditionManager::initialize(Teuchos::RCP<Dis
         Teuchos::RCP<Epetra_Vector> toVectorV = peridigm->getV();
         bcPtr = Teuchos::rcp(new DirichletIncrementBC(name,bcParams,toVectorV,peridigm,false,0.0,1.0));
         boundaryConditions.push_back(bcPtr);
-
       }
       break;
       case PRESCRIBED_FLUID_PRESSURE_U:
       {
-				// a prescribed fluid pressure boundary condition will automatically update deltaFluidPressureU      
+				// a prescribed fluid pressure boundary condition will automatically update deltaFluidPressureU
         Teuchos::RCP<Epetra_Vector> toVector = peridigm->getFluidPressureDeltaU();
         bcPtr = Teuchos::rcp(new DirichletIncrementBC(name,bcParams,toVector,peridigm,false,1.0,0.0));
         boundaryConditions.push_back(bcPtr);
@@ -134,15 +133,49 @@ void PeridigmNS::BoundaryAndInitialConditionManager::initialize(Teuchos::RCP<Dis
       }
       break;
       case INITIAL_TEMPERATURE:
+    	{
+     		std::cerr << "\nAn initial temperature has been defined\n" << std::endl;
+    		Teuchos::RCP<Epetra_Vector> toVector = peridigm->getDeltaTemperature();
+    		bcPtr = Teuchos::rcp(new DirichletBC(name,bcParams,toVector,peridigm,false));
+    		initialConditions.push_back(bcPtr);
+    	}
+    	break;
+    	case PRESCRIBED_TEMPERATURE:
+    	{
+     		std::cerr << "\nA prescribed temperature has been defined\n" << std::endl;
+    		Teuchos::RCP<Epetra_Vector> toVector = peridigm->getDeltaTemperature();
+    		bcPtr = Teuchos::rcp(new DirichletIncrementBC(name,bcParams,toVector,peridigm,false,1.0,0.0));
+    		boundaryConditions.push_back(bcPtr);
+    	}
+    	break;
+      case INITIAL_HEAT_FLOW:
       {
-        Teuchos::RCP<Epetra_Vector> toVector = peridigm->getDeltaTemperature();
+        std::cerr << "\nAn initial heat flow has been defined\n" << std::endl;
+        Teuchos::RCP<Epetra_Vector> toVector = peridigm->getHeatFlow();
         bcPtr = Teuchos::rcp(new DirichletBC(name,bcParams,toVector,peridigm,false));
         initialConditions.push_back(bcPtr);
       }
       break;
-      case PRESCRIBED_TEMPERATURE:
+      case PRESCRIBED_HEAT_FLOW:
       {
-        Teuchos::RCP<Epetra_Vector> toVector = peridigm->getDeltaTemperature();
+        std::cerr << "\nA prescribed heat flow has been defined\n" << std::endl;
+        Teuchos::RCP<Epetra_Vector> toVector = peridigm->getHeatFlow();
+        bcPtr = Teuchos::rcp(new DirichletIncrementBC(name,bcParams,toVector,peridigm,false,1.0,0.0));
+        boundaryConditions.push_back(bcPtr);
+      }
+      break;
+      case INITIAL_INTERNAL_HEAT_SOURCE:
+      {
+        std::cerr << "\nAn initial heat source has been defined\n" << std::endl;
+        Teuchos::RCP<Epetra_Vector> toVector = peridigm->getInternalHeatSource();
+        bcPtr = Teuchos::rcp(new DirichletIncrementBC(name,bcParams,toVector,peridigm,false,1.0,0.0));
+        boundaryConditions.push_back(bcPtr);
+      }
+      break;
+      case PRESCRIBED_INTERNAL_HEAT_SOURCE:
+      {
+        std::cerr << "\nA prescribed heat source has been defined\n" << std::endl;
+        Teuchos::RCP<Epetra_Vector> toVector = peridigm->getInternalHeatSource();
         bcPtr = Teuchos::rcp(new DirichletIncrementBC(name,bcParams,toVector,peridigm,false,1.0,0.0));
         boundaryConditions.push_back(bcPtr);
       }
@@ -516,7 +549,7 @@ void PeridigmNS::BoundaryAndInitialConditionManager::applyKinematicBC_InsertZero
 						}
 					}
 				}
-			}	
+			}
 		}
 	}
   PeridigmNS::Timer::self().stopTimer("Apply Boundary Conditions");
@@ -655,7 +688,7 @@ void PeridigmNS::BoundaryAndInitialConditionManager::applyKinematicBC_InsertZero
               int numEntriesToSetToZero = columnIndex;
               for(int iRow=0 ; iRow<mat->NumMyRows() ; ++iRow)
                     mat->ReplaceMyValues(iRow, numEntriesToSetToZero, &jacobianValues[0], &jacobianColIndices[0]);
-                
+
               for(unsigned int i=0 ; i<nodeList.size() ; i++){
                 // zero out the row and put diagonalEntry on the diagonal
 								// Assumes one additional pressure term for every three sm dofs
@@ -695,9 +728,9 @@ string PeridigmNS::BoundaryAndInitialConditionManager::nodeSetStringToFileName(s
 
   string emptyString = "";
   string whitespace = " \t";
-  
+
   boost::trim(str);
-  
+
   // If there is any whitespace then str is a list, not a file name
   if(str.find_first_of(whitespace) != std::string::npos)
     return emptyString;

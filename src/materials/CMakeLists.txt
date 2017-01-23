@@ -15,6 +15,7 @@ set(PD_MATERIAL_SOURCES
     viscoplastic_needleman_correspondence.cxx
     material_utilities.cxx
     nonlocal_diffusion.cxx
+    nonlocal_thermal_diffusion.cxx
     pals.cxx
 )
 
