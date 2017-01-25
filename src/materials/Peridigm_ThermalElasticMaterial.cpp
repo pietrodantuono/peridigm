@@ -80,16 +80,16 @@ PeridigmNS::ThermalElasticMaterial::ThermalElasticMaterial(const Teuchos::Parame
 	m_alpha = params.get<double>("Thermal Expansion Coefficient");
 	m_thermalConductivity = params.get<double>("Thermal Conductivity");
 	m_specificHeat = params.get<double>("Specific Heat");
-	
+
 	if(params.isParameter("Apply Automatic Differentiation Jacobian"))
 		m_applyAutomaticDifferentiationJacobian = params.get<bool>("Apply Automatic Differentiation Jacobian");
 
 	if(params.isParameter("Apply Shear Correction Factor"))
 		m_applySurfaceCorrectionFactor = params.get<bool>("Apply Shear Correction Factor");
-	
+
 	if(params.isParameter("Fluid Temperature"))
 		m_thermalShock = true;
-	
+
 	if(m_thermalShock)
 	{
 		m_convectionConstant = params.get<double>("Convection Constant");
@@ -243,10 +243,10 @@ PeridigmNS::ThermalElasticMaterial::computeHeatFlow(	const double dt,
 
 // 			Zero out the heat flow
 	dataManager.getData(m_heatFlowFieldId, PeridigmField::STEP_NP1)->PutScalar(0.0);
-	
+
 // 	Extract pointers to the underlying data
 	double *x, *y, *cellVolume, *bondDamage, *heatFlow, *deltaTemperature;
-	
+
 	dataManager.getData(m_modelCoordinatesFieldId, PeridigmField::STEP_NONE)->ExtractView(&x);
 	dataManager.getData(m_coordinatesFieldId, PeridigmField::STEP_NP1)->ExtractView(&y);
 	dataManager.getData(m_volumeFieldId, PeridigmField::STEP_NONE)->ExtractView(&cellVolume);
@@ -314,10 +314,10 @@ PeridigmNS::ThermalElasticMaterial::computeStoredElasticEnergyDensity(
 		for(iNID=0 ; iNID<numNeighbors ; ++iNID){
 			neighborId = neighborhoodList[neighborhoodListIndex++];
 			neighborBondDamage = bondDamage[bondIndex++];
-			initialDistance = 
+			initialDistance =
 			distance(nodeInitialX[0], nodeInitialX[1], nodeInitialX[2],
 					x[neighborId*3], x[neighborId*3+1], x[neighborId*3+2]);
-			currentDistance = 
+			currentDistance =
 			distance(nodeCurrentX[0], nodeCurrentX[1], nodeCurrentX[2],
 					y[neighborId*3], y[neighborId*3+1], y[neighborId*3+2]) -
 					m_alpha*deltaTemperature[nodeId]*initialDistance;
@@ -340,7 +340,7 @@ PeridigmNS::ThermalElasticMaterial::computeJacobian(const double dt,
 {
   if(m_applyAutomaticDifferentiationJacobian){
     // Compute the Jacobian via automatic differentiation
-    computeAutomaticDifferentiationJacobian(dt, numOwnedPoints, ownedIDs, neighborhoodList, dataManager, jacobian, jacobianType);  
+    computeAutomaticDifferentiationJacobian(dt, numOwnedPoints, ownedIDs, neighborhoodList, dataManager, jacobian, jacobianType);
 		//jacobian.getFECrsMatrix()->Print(std::cout);
   }
   else{
@@ -377,7 +377,7 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 		vector<int> tempMyGlobalIDs(numEntries);
 		// Put the node at the center of the neighborhood at the beginning of the list.
 		tempMyGlobalIDs[0] = dataManager.getOwnedScalarPointMap()->GID(iID);
-		vector<int> tempNeighborhoodList(numEntries); 
+		vector<int> tempNeighborhoodList(numEntries);
 		tempNeighborhoodList[0] = numNeighbors;
 		for(int iNID=0 ; iNID<numNeighbors ; ++iNID){
 			int neighborID = neighborhoodList[neighborhoodListIndex++];
@@ -435,17 +435,17 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 	tempDataManager.getData(m_heatFlowFieldId, PeridigmField::STEP_NP1)->ExtractView(&heatFlow);
 	tempDataManager.getData(m_deltaTemperatureFieldId, PeridigmField::STEP_NP1)->ExtractView(&deltaTemperature);
 	// Create arrays of Fad objects for the current coordinates, dilatation, and force density
-	// current fluid pressure and fluid flux density
+	// current delta temperature and heat flux density
 	// Modify the existing vector of Fad objects for the current coordinates
 	if((int)y_AD.size() < (dofPerNode-1)*numEntries)
 		y_AD.resize((dofPerNode-1)*numEntries);
-		if((int)dTY_AD.size() < numEntries)
+	if((int)dTY_AD.size() < numEntries)
 		dTY_AD.resize(numEntries);
 
-		// We want to get derivatives with respect to y and fluidPressureY at the same time
+		// We want to get derivatives with respect to y and deltaTemperature at the same time
 		// so we must determine:
 		// Out of the total columns which of these are
-		// entries for solids and which are entries for fluids?
+		// entries for solids and which are entries for temperature?
 	for(int i=0 ; i<numTotalNeighborhoodDof ; i+=dofPerNode){
 		// First three dof in a pack of dofPerNode are for solids
 		for(int j=0 ; j<3 ; ++j){
@@ -453,7 +453,7 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 			// Convert index stride and store value
 			y_AD[i*3/dofPerNode+j].val() = y[i*3/dofPerNode+j];
 		}
-		// Last dof in a pack of dofPerNode is always fluid pressure y
+		// Last dof in a pack of dofPerNode is always delta temperature
 		dTY_AD[i/dofPerNode].diff(i+3,numTotalNeighborhoodDof);
 		dTY_AD[i/dofPerNode].val() = deltaTemperature[i/dofPerNode];
 	}
@@ -462,13 +462,12 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 	vector<Sacado::Fad::DFad<double> > force_AD((dofPerNode-1)*numEntries);
 	vector<Sacado::Fad::DFad<double> > heatFlow_AD(numEntries);
 
-	// Compute derivatives with respect to y alone
 	// Evaluate the constitutive model using the AD types
 	MATERIAL_EVALUATION::computeDilatation(x,&y_AD[0],weightedVolume,cellVolume,bondDamage,&dilatation_AD[0],&tempNeighborhoodList[0],tempNumOwnedPoints,m_horizon,m_OMEGA,m_alpha,deltaTemperature);
 	MATERIAL_EVALUATION::computeInternalForceLinearElasticCoupled(x,&y_AD[0],weightedVolume,cellVolume,&dilatation_AD[0],bondDamage,scf,&force_AD[0],&tempNeighborhoodList[0],tempNumOwnedPoints,m_bulkModulus,m_shearModulus,m_horizon,m_alpha,&dTY_AD[0]);
 
 	MATERIAL_EVALUATION::computeHeatFlow(x,&y_AD[0],cellVolume,bondDamage,&heatFlow_AD[0],&tempNeighborhoodList[0],tempNumOwnedPoints,m_thermalConductivity,m_specificHeat,m_horizon,&dTY_AD[0]);
-	
+
 	// Load derivative values into scratch matrix
 	// Multiply by volume along the way to convert force density to force
 	double value;
@@ -486,7 +485,7 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 				}
 			}
 		}
-						
+
 	// Sum the values into the global tangent matrix (this is expensive).
 	if (jacobianType == PeridigmNS::Material::FULL_MATRIX)
 		jacobian.addValues((int)globalIndices.size(), &globalIndices[0], scratchMatrix.Data());
@@ -499,7 +498,7 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 	}
 
 
-/*  
+/*
 void
 PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(const double dt,
                                                                      const int numOwnedPoints,
@@ -526,7 +525,7 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
     vector<int> tempMyGlobalIDs(numEntries);
     // Put the node at the center of the neighborhood at the beginning of the list.
     tempMyGlobalIDs[0] = dataManager.getOwnedScalarPointMap()->GID(iID);
-    vector<int> tempNeighborhoodList(numEntries); 
+    vector<int> tempNeighborhoodList(numEntries);
     tempNeighborhoodList[0] = numNeighbors;
     for(int iNID=0 ; iNID<numNeighbors ; ++iNID){
       int neighborID = neighborhoodList[neighborhoodListIndex++];
@@ -616,10 +615,10 @@ PeridigmNS::ThermalElasticMaterial::computeAutomaticDifferentiationJacobian(cons
 							value = 0.0;
 	     			scratchMatrix(row+subrow, col+subcol) = value;
 	  			}
-			} 
+			}
      }
     }
-				
+
 
     // Sum the values into the global tangent matrix (this is expensive).
     if (jacobianType == PeridigmNS::Material::FULL_MATRIX)

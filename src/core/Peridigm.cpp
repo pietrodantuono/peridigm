@@ -112,6 +112,8 @@ PeridigmNS::Peridigm::Peridigm(const MPI_Comm& comm,
     hasThermalShock(false),
     computeIntersections(false),
     constructInterfaces(false),
+    deltaTemperatureFieldId(-1),
+    numThermalDoFs(0), // MODIFIED NOTE
     blockIdFieldId(-1),
     horizonFieldId(-1),
     volumeFieldId(-1),
@@ -120,7 +122,6 @@ PeridigmNS::Peridigm::Peridigm(const MPI_Comm& comm,
     displacementFieldId(-1),
     velocityFieldId(-1),
     accelerationFieldId(-1),
-    deltaTemperatureFieldId(-1),
     forceDensityFieldId(-1),
     contactForceDensityFieldId(-1),
     externalForceDensityFieldId(-1),
@@ -129,8 +130,7 @@ PeridigmNS::Peridigm::Peridigm(const MPI_Comm& comm,
     fluidPressureUFieldId(-1),
     fluidPressureVFieldId(-1),
     fluidFlowDensityFieldId(-1),
-    numMultiphysDoFs(0),
-    numThermalDoFs(0) // MODIFIED NOTE
+    numMultiphysDoFs(0)
 {
 #ifdef HAVE_MPI
   peridigmComm = Teuchos::rcp(new Epetra_MpiComm(comm));
@@ -1403,8 +1403,8 @@ void PeridigmNS::Peridigm::executeExplicit(Teuchos::RCP<Teuchos::ParameterList> 
   }
 
   // Compute the approximate critical time step for the thermal problem
-	double Tdt; // initialized to make the compiler happy.
-	int nTsteps; // initialized to make the compiler happy.
+	double Tdt = 1.; // initialized to make the compiler happy.
+	int nTsteps = 1; // initialized to make the compiler happy.
 	if (analysisHasThermal){
 		double criticalThermalTimeStep = 1.0e50;
 		for(blockIt = blocks->begin() ; blockIt != blocks->end() ; blockIt++){
@@ -1649,6 +1649,8 @@ void PeridigmNS::Peridigm::executeExplicit(Teuchos::RCP<Teuchos::ParameterList> 
 
     // Copy data from mothership vectors to overlap vectors in data manager
     PeridigmNS::Timer::self().startTimer("Gather/Scatter");
+    double* horizonPtr;
+    horizon->ExtractView(&horizonPtr);
     if(analysisHasThermal && fmod(step,deltaStep) == 0){
       if (hasThermalShock){
         for (size_t i=0; i<localThermalShockNodeList.size(); i++){

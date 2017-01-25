@@ -84,10 +84,10 @@ void computeHeatFlow
 	ScalarT *heatFlowOwned = heatFlowOverlap;
 	const int *neighPtr = localNeighborList;
 	double cellVolume;
-// 	double X_dx, X_dy, X_dz, zeta, omega; 
+// 	double X_dx, X_dy, X_dz, zeta, omega;
 	ScalarT Y_dx, Y_dy, Y_dz, dY, dT, q1;
 	double microConductivity = 6 * K_T /( PI_G * horizon*horizon*horizon*horizon);
-	
+
 // 	loop over all the nodes
 	for(int p=0;p<numOwnedPoints;p++, deltaTemperatureOwned++, yOwned +=3, heatFlowOwned++){
 		int numNeigh = *neighPtr; neighPtr++;
@@ -151,118 +151,6 @@ template void computeHeatFlow<Sacado::Fad::DFad<double> >
 	double horizon,
 	Sacado::Fad::DFad<double>* deltaTemperatureOverlap
 );
-
-/*
-//! This simple version of the method ignores the lack of pore damage near the node
-//! so that a static equilibrium in an isotropic medium can be achieved for diagnosing
-//! problems with the proper diffusion model.
-template<typename ScalarT>
-void computeHeatFlowDeadSimple
-(
-	const double*  xOverlap,
-	const ScalarT* yOverlap,
-	// const ScalarT* temperatureYOverlap,
-	const double* volumeOverlap,
-	const double* bondDamage,
-	ScalarT* heatInternalOverlap,
-	const int*  localNeighborList,
-	int numOwnedPoints,
-	double thermalConductivity,
-	double microConductivity,
-	double horizon,
-	double thermalExpansionCoefficient,
-	ScalarT* deltaTemperature
-)
-{
-
-	double K_T = thermalConductivity;
-	double PI_G = 3.14159;
-	double k = microConductivity;
-	//const double* xOwned = xOverlap;
-	const ScalarT *yOwned = yOverlap;
-	// const ScalarT *temperatureYOwned = temperatureYOverlap;
-	const double *v = volumeOverlap;
-	ScalarT *heatFlowOwned = heatInternalOverlap;
-	ScalarT bondComponents[3];
-
-	const int *neighPtr = localNeighborList;
-	double cellVolume;
-	ScalarT Y_dx, Y_dy, Y_dz, dY, dT, q;
-
-	for(int p=0;p<numOwnedPoints;p++, deltaTemperature++, yOwned +=3, heatFlowOwned++){
-		int numNeigh = *neighPtr; neighPtr++;
-		double selfCellVolume = v[p];
-		//const double* X = xOwned;
-		const ScalarT *Y = yOwned;
- 		ScalarT *deltaT = deltaTemperature;
-
-		for(int n=0;n<numNeigh;n++,neighPtr++,bondDamage++){
-			int localId = *neighPtr;
-			cellVolume = v[localId];
-			const ScalarT* deltaTP = &deltaTemperature[localId];
-			const ScalarT* YP = &yOverlap[3*localId];
-			//const double* XP = &xOverlap[3*localId];
-			//X_dx = XP[0]-X[0];
-			//X_dy = XP[1]-X[1];
-			//X_dz = XP[2]-X[2];
-			//zeta = sqrt(X_dx*X_dx+X_dy*X_dy+X_dz*X_dz);
-
-			Y_dx = YP[0]-Y[0];
-			Y_dy = YP[1]-Y[1];
-			Y_dz = YP[2]-Y[2];
-			dY = sqrt(Y_dx*Y_dx+Y_dy*Y_dy+Y_dz*Y_dz);
-			dT = *deltaTP - *deltaT;
-			// We need the actual components of dY organized for indexing by number.
-			bondComponents[0] = Y_dx;
-			bondComponents[1] = Y_dy;
-			bondComponents[2] = Y_dz;
-			//omega = scalarInfluenceFunction(zeta,horizon);
-			// TODO: insert the compute of the microConductivity function.
-			k = 6 * K_T /( PI_G * horizon*horizon*horizon*horizon);
-			q = (1-*bondDamage)*k * dT / pow(dY, 2.0);
-			*(heatFlowOwned) += q*cellVolume;
-			heatInternalOverlap[localId] -= q*selfCellVolume;
-		}
-	}
-}
-
-// Explicit template instantiation for double.
-template void computeHeatFlowDeadSimple<double>
-(
-	const double*  xOverlap,
-	const double* yOverlap,
-	// const ScalarT* temperatureYOverlap,
-	const double* volumeOverlap,
-	const double* bondDamage,
-	double* heatInternalOverlap,
-	const int*  localNeighborList,
-	int numOwnedPoints,
-	double thermalConductivity,
-	double microConductivity,
-	double horizon,
-	double thermalExpansionCoefficient,
-	double* deltaTemperature
-);
-
-// Explicit template instantiation for Sacado::Fad::DFad<double>.
-template void computeHeatFlowDeadSimple<Sacado::Fad::DFad<double> >
-(
-		const double*  xOverlap,
- 		const Sacado::Fad::DFad<double>* yOverlap,
-// 		const Sacado::Fad::DFad<double>* temperatureYOverlap,
-		const double* volumeOverlap,
-		const double* bondDamage,
-		Sacado::Fad::DFad<double>* heatInternalOverlap,
-		const int*  localNeighborList,
-		int numOwnedPoints,
-		double thermalConductivity,
-		double microConductivity,
-		double horizon,
-		double thermalExpansionCoefficient,
-		Sacado::Fad::DFad<double>* deltaTemperature
-);
-}
-*/
 
 // --------------------------------INTERNAL FORCE-------------------------------
 
@@ -330,7 +218,7 @@ void computeInternalForceLinearElasticCoupled
 			omega = scalarInfluenceFunction(zeta,horizon);
 			// c1 = omega*(*theta)*(9.0*K-15.0*MU)/(3.0*(*m));
 			// NOTE: set pressure effect to maximum, this is not to be a permanent change
-			c1 = omega*(*theta)*(3.0*K/(*m)-alpha/3.0);// -3.0*omega/(*m)*(1.0 )*(*fluidPressureYOwned); //see nonlocal_diffusion.cxx,line  498
+			c1 = omega*(*theta)*(3.0*K/(*m)-alpha/3.0);
 			t = (1.0-*bondDamage)*(c1 * zeta + (1.0-*bondDamage) * omega * alpha * e);
 			fx = t * Y_dx / dY;
 			fy = t * Y_dy / dY;
@@ -387,134 +275,4 @@ template void computeInternalForceLinearElasticCoupled<Sacado::Fad::DFad<double>
 	double thermalExpansionCoefficient,
 	Sacado::Fad::DFad<double>* deltaTemperature
 );
-/*
-//! Computes contributions to the internal force resulting from owned points.
-// In this simple version of the method, fluid pressure at a node always affects the
-// dilatation at a node regardless of the lack of bond damage near the node.
-template<typename ScalarT>
-void computeInternalForceLinearElasticCoupledDeadSimple
-(
-	const double* xOverlap,
-	const ScalarT* yOverlap,
-// 	const ScalarT* temperatureYOverlap,
-	const double* mOwned,
-	const double* volumeOverlap,
-	const ScalarT* dilatationOwned,
-	const double* bondDamage,
-	const double* dsfOwned,
-	ScalarT* fInternalOverlap,
-	const int*  localNeighborList,
-	int numOwnedPoints,
-	double BULK_MODULUS,
-	double SHEAR_MODULUS,
-	double horizon,
-	double thermalExpansionCoefficient,
-	ScalarT* deltaTemperature
-)
-{
-
-
-// 	Compute processor local contribution to internal force
-
-	double K = BULK_MODULUS;
-	double MU = SHEAR_MODULUS;
-
-	const double *xOwned = xOverlap;
-	const ScalarT *yOwned = yOverlap;
-// 	const ScalarT *temperatureYOwned = temperatureYOverlap;
-	const double *deltaT = deltaTemperature;
-	const double *m = mOwned;
-	const double *v = volumeOverlap;
-	const double *dsf = dsfOwned;
-	const ScalarT *theta = dilatationOwned;
-	ScalarT *fOwned = fInternalOverlap;
-
-	const int *neighPtr = localNeighborList;
-	double cellVolume, alpha, X_dx, X_dy, X_dz, zeta, omega;
-	ScalarT Y_dx, Y_dy, Y_dz, dY, dT, t, fx, fy, fz, e, c1;
-	for(int p=0;p<numOwnedPoints;p++, xOwned +=3, yOwned +=3, fOwned+=3, deltaT++, m++, theta++, dsf++){
-
-		int numNeigh = *neighPtr; neighPtr++;
-		const double *X = xOwned;
-		const ScalarT *Y = yOwned;
-		alpha = 15.0*MU/(*m);
-		alpha *= (*dsf);
-		double selfCellVolume = v[p];
-		for(int n=0;n<numNeigh;n++,neighPtr++,bondDamage++){
-			int localId = *neighPtr;
-			cellVolume = v[localId];
-			const double *XP = &xOverlap[3*localId];
-			const ScalarT *YP = &yOverlap[3*localId];
-			X_dx = XP[0]-X[0];
-			X_dy = XP[1]-X[1];
-			X_dz = XP[2]-X[2];
-			zeta = sqrt(X_dx*X_dx+X_dy*X_dy+X_dz*X_dz);
-			Y_dx = YP[0]-Y[0];
-			Y_dy = YP[1]-Y[1];
-			Y_dz = YP[2]-Y[2];
-			dY = sqrt(Y_dx*Y_dx+Y_dy*Y_dy+Y_dz*Y_dz);
-            e = dY - zeta - thermalExpansionCoefficient*(*deltaT)*zeta;
-			omega = scalarInfluenceFunction(zeta,horizon);
-			// c1 = omega*(*theta)*(9.0*K-15.0*MU)/(3.0*(*m));
-			//c1 = omega*(*theta)*(3.0*K/(*m)-alpha/3.0) -3.0*omega/(*m)*(*bondDamage)*(*fluidPressureYOwned);
-			//NOTE: Notice how regardless of bond damage fluid pressure has an effect on dilatation.
-			//c1 = omega*(*theta)*(3.0*K/(*m)-alpha/3.0) -3.0*omega/(*m)*(*fluidPressureYOwned);
-			c1 = omega*(*theta)*(3.0*K/(*m)-alpha/3.0);
-			t = (1.0-*bondDamage)*(c1 * zeta + (1.0-*bondDamage) * omega * alpha * e);
-			fx = t * Y_dx / dY;
-			fy = t * Y_dy / dY;
-			fz = t * Y_dz / dY;
-
-			*(fOwned+0) += fx*cellVolume;
-			*(fOwned+1) += fy*cellVolume;
-			*(fOwned+2) += fz*cellVolume;
-			fInternalOverlap[3*localId+0] -= fx*selfCellVolume;
-			fInternalOverlap[3*localId+1] -= fy*selfCellVolume;
-			fInternalOverlap[3*localId+2] -= fz*selfCellVolume;
-		}
-	}
-}
-
-//Explicit template instantiation for double.
-template void computeInternalForceLinearElasticCoupledDeadSimple<double>
-(
-	const double* xOverlap,
-	const double* yOverlap,
-// 	const double* temperatureYOverlap,
-	const double* mOwned,
-	const double* volumeOverlap,
-	const double* dilatationOwned,
-	const double* bondDamage,
-	const double* dsfOwned,
-	double* fInternalOverlap,
-	const int*  localNeighborList,
-	int numOwnedPoints,
-	double BULK_MODULUS,
-	double SHEAR_MODULUS,
-	double horizon,
-	double thermalExpansionCoefficient,
-	ScalarT* deltaTemperature
-);
-
-//Explicit template instantiation for Sacado::Fad::DFad<double>.
-template void computeInternalForceLinearElasticCoupledDeadSimple<Sacado::Fad::DFad<double> >
-(
-	const double* xOverlap,
-	const Sacado::Fad::DFad<double>* yOverlap,
-// 	const Sacado::Fad::DFad<double>* temperatureYOverlap,
-	const double* mOwned,
-	const double* volumeOverlap,
-	const Sacado::Fad::DFad<double>* dilatationOwned,
-	const double* bondDamage,
-	const double* dsfOwned,
-	Sacado::Fad::DFad<double>* fInternalOverlap,
-	const int*  localNeighborList,
-	int numOwnedPoints,
-	double BULK_MODULUS,
-	double SHEAR_MODULUS,
-	double horizon,
-	double thermalExpansionCoefficient,
-	ScalarT* deltaTemperature
-);
-*/
 }
